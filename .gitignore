@@ -1,5 +1,6 @@
 *.class
 *.log
+output/
 
 # sbt specific
 dist/*
@@ -8,6 +9,12 @@ lib_managed/
 src_managed/
 project/boot/
 project/plugins/project/
+project/project/
+project/target/
 
 # Scala-IDE specific
+.classpath
+.project
 .scala_dependencies
+.idea
+.settings
