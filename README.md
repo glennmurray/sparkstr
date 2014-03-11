@@ -1,9 +1,9 @@
 Sparkstr
 ========
 
-This project holds some examples of 
-[Spark Streaming](http://spark.incubator.apache.org/docs/latest/index.html). 
-These are proofs of concepts.
+This project is composed of examples of 
+[Spark Streaming](http://spark.incubator.apache.org/docs/latest/index.html)
+jobs.  These are proofs of concepts.
 
 Installation
 ------------
@@ -40,3 +40,12 @@ Run this in sbt with
 
     > run-main sparkstr.StreamAverager local[2] 1
 
+
+StreamLargest
+-------------
+
+Find the current k largest (and j smallest) values in a stream.
+
+Run this in sbt with
+
+    > run-main sparkstr.StreamLargest local[2] 1
