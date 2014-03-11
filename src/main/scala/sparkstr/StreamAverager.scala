@@ -9,9 +9,6 @@ import scala.collection.mutable.SynchronizedQueue
 
 /**
  * Average values in a stream. 
- *
- * To run this on your local machine with sbt:
- *    'run local[2] 1'
  */
 object StreamAverager {
   def main(args: Array[String]) {
@@ -23,7 +20,7 @@ object StreamAverager {
     val Array(master, batchDuration) = args
 
     // Create the context with the given batchDuration.
-    val ssc = new StreamingContext(master, "StreamAverager", Seconds(batchDuration.toInt),
+    val ssc = new StreamingContext(master, "StreamAverager", Seconds(batchDuration.toInt), 
       System.getenv("SPARK_HOME"), Seq(System.getenv("SPARK_EXAMPLES_JAR")))
     ssc.checkpoint("./output")
 
@@ -37,8 +34,8 @@ object StreamAverager {
     val reducedStream = mappedStream.reduceByKey(_ + _)
     //reducedStream.print()
 
-    // Update the cumulative count using updateStateByKey;
-    // this will give a Dstream made of state (cumulative sums).
+    // Calculate and update the cumulative average using updateStateByKey;
+    // this will yield a state Dstream[(String, StreamAveragerState)].
     val updateFunc = (values: Seq[Double], state: Option[StreamAveragerState]) => {
       val prevState = state.getOrElse(new StreamAveragerState())
       val newCount:Long = prevState.count + values.size
@@ -48,7 +45,8 @@ object StreamAverager {
     val stateDStream:DStream[(String, StreamAveragerState)]
       = reducedStream.updateStateByKey[StreamAveragerState](updateFunc)
     //stateDStream.print()
-    val stateDStreamValues = stateDStream.map(s => (s._1, s._2.count, s._2.average))
+    val stateDStreamValues 
+      = stateDStream.map(s => (s._1, " "+s._2.count, " "+s._2.average))
     stateDStreamValues.print()
 
     ssc.start()
@@ -56,8 +54,8 @@ object StreamAverager {
     // Create and stream some RDDs into the rddQueue.
     for (i <- 1 to 7) {
       val dataList = List(
-        new StreamAveragerData("labelA", i),
-        new StreamAveragerData("labelA", i), // Should avg to count+1.
+        new StreamAveragerData("labelA", i), // Should avg to count+1:
+        new StreamAveragerData("labelA", i), //   2*(n*(n+1)/2) / n
         new StreamAveragerData("labelB", i),
         new StreamAveragerData("labelB", -i))  // Label B should avg to zero.
 
