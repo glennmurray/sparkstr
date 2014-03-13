@@ -1,11 +1,11 @@
 package sparkstr
 
-import scala.annotation.tailrec
-import scala.collection.mutable.{Buffer, SynchronizedQueue}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming._
 import org.apache.spark.streaming.StreamingContext._
+import org.apache.spark.streaming.dstream.DStream
+
+import scala.collection.mutable.{Buffer, SynchronizedQueue}
 
 
 /**
@@ -64,11 +64,11 @@ object StreamLargest {
 
       // makeRDD[T](seq: Seq[T], numSlices: Int): RDD[T]
       // "Distribute a local Scala collection to form an RDD."
-      rddQueue += ssc.sparkContext.makeRDD(dataList, 3)
+      rddQueue += ssc.sparkContext.makeRDD(dataList)
       Thread.sleep(1000)
     }
+
     ssc.stop()
-    System.exit(0)
   }
 }
 

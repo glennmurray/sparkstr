@@ -8,14 +8,15 @@ jobs.  These are proofs of concepts.
 Installation
 ------------
 
-Install [sbt](http://www.scala-sbt.org/).  This was developed with sbt version
-12.4.  
+This assumes some knowledge of Java and Scala.  The code was developed on Linux
+with Java 7.
 
-Install [Spark](https://spark.incubator.apache.org/).  This was developed with
-version 0.8.1.
+Install [sbt](http://www.scala-sbt.org/) and
+[Spark](https://spark.incubator.apache.org/).  The versions are given in the
+`libraryDependencies` variable in the `project/build.sbt` file.
 
-Clone this repository using a url on the right and run 'sbt' in the sparkstr
-directory.  At the sbt prompt, run 'compile' and then one of the 'run-main'
+Clone this repository using a url on the right and run `sbt` in the sparkstr
+directory.  At the sbt prompt, run `compile` and then one of the `run-main`
 commands below.
 
 
@@ -44,7 +45,7 @@ Run this in sbt with
 StreamLargest
 -------------
 
-Find the current k largest (and j smallest) values in a stream.
+Find the current *k* largest (and *j* smallest) values in a stream.
 
 Run this in sbt with
 

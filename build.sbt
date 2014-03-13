@@ -2,7 +2,7 @@ import AssemblyKeys._ // put this at the top of the file
 
 name:="sparkstr"
 
-scalaVersion :="2.9.3"
+scalaVersion :="2.10.3"
 
 version :="0.1"
 
@@ -18,8 +18,8 @@ resolvers ++= Seq(
 libraryDependencies ++= {
   Seq(
     "org.scalatest" %% "scalatest" % "1.9.1" % "test",
-    "org.apache.spark" %% "spark-core" % "0.8.1-incubating" % "provided",
-    "org.apache.spark" %% "spark-streaming" % "0.8.1-incubating" % "provided",
+    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided",
+    "org.apache.spark" %% "spark-streaming" % "0.9.0-incubating" % "provided",
     "org.slf4j" % "slf4j-log4j12" % "1.7.2"
   )
 }
