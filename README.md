@@ -50,3 +50,19 @@ Find the current *k* largest (and *j* smallest) values in a stream.
 Run this in sbt with
 
     > run-main sparkstr.StreamLargest local[2] 1
+
+HyperLogLog
+-----------
+
+An implementation of the HyperLogLog algorithm by [Flajolet
+et.al](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.142.9475). This
+uses probabilistic techniques to estimate the size of data.  A good discussion
+is at the [AK Tech Blog](http://blog.aggregateknowledge.com/2012/10/25/sketch-of-the-day-hyperloglog-cornerstone-of-a-big-data-infrastructure/),
+which also sports a visualization tool.
+
+Run this in sbt with
+
+    > run-main sparkstr.HyperLogLog local[2] 1
+
+The defaults are to create a single set with a million members.  It may be
+worthwhile to use `local[4]` instead of `local[2]` if you have the available cores.
