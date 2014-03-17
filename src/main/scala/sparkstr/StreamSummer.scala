@@ -9,10 +9,7 @@ import scala.collection.mutable.SynchronizedQueue
 
 
 /**
- * Sum values in a stream.
- *
- * To run this on your local machine with sbt:
- *    'run local[2] 3'
+ * Sum values in a stream, by key.
  */
 object StreamSummer {
   def main(args: Array[String]) {
@@ -22,12 +19,6 @@ object StreamSummer {
       System.exit(1)
     }
     val Array(master, batchDuration) = args
-
-    val updateFunc = (values: Seq[Double], state: Option[Double]) => {
-      val currentCount:Double = values.sum//foldLeft(0)(_ + _)
-      val previousCount:Double = state.getOrElse(0)
-      Some(currentCount + previousCount)
-    }
 
     // Create the context with the given batchDuration.
     val ssc = new StreamingContext(master, "StreamSummer", Seconds(batchDuration.toInt),
@@ -44,8 +35,17 @@ object StreamSummer {
     val reducedStream = mappedStream.reduceByKey(_ + _)
     reducedStream.print()
 
-    // Update the cumulative count using updateStateByKey;
-    // this will give a Dstream made of state (cumulative sums).
+    // Calculate and update the cumulative sums by key using 
+    // PairDStreamFunctions.updateStateByKey[S](updateFunc: (Seq[V], Option[S]) ⇒ Option[S]),
+    // which will work on the stream of k:v pairs in mappedStream.  This will yield
+    // a state Dstream[(String, Double)] which can be iteratively updated
+    // with updateFunc.  Note that our updateFunc does not reference the pairs's keys,
+    // but updateStateByKey keeps track of them and returns state by key.
+    val updateFunc = (values: Seq[Double], state: Option[Double]) => {
+      val currentSum:Double = values.sum // or foldLeft(0)(_ + _)
+      val previousSum:Double = state.getOrElse(0)
+      Some(previousSum + currentSum)
+    }
     val stateDStream:DStream[(String, Double)] 
       = reducedStream.updateStateByKey[Double](updateFunc)
     stateDStream.print()
@@ -53,12 +53,14 @@ object StreamSummer {
     ssc.start()
     
     // Create and push some RDDs into the rddQueue.
-    for (i <- 1 to 7) {
+    for (i <- 1 to 3) {
       val dataList = List(
-        new StreamSummerData("labelA", i),
-        new StreamSummerData("labelA", i + i*(0.01)),
-        new StreamSummerData("labelB", -i),
-        new StreamSummerData("labelB", -i - i*(0.01)))
+        new StreamSummerData("LabelA", 1),   // LabelA sums to i.ii.
+        new StreamSummerData("LabelA", 0.1),
+        new StreamSummerData("LabelA", 0.01),
+
+        new StreamSummerData("LabelB", i),   // LabelB sums to zero.
+        new StreamSummerData("LabelB", -i))
 
       // makeRDD[T](seq: Seq[T], numSlices: Int): RDD[T]
       // "Distribute a local Scala collection to form an RDD."
