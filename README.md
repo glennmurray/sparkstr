@@ -61,7 +61,7 @@ the way in the same straight-forward way as the Stream Average job.
 
 Run this in sbt with
 
-    > run-main sparkstr.HyperLogLog local[2] 1
+    > run-main sparkstr.StreamVariance local[2] 1
 
 
 HyperLogLog Implementation
