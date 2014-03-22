@@ -114,4 +114,22 @@ class StreamVarianceTest extends FunSuite {
   }
 
 
+  test("welfordVariance(List(-1, 3, -2, 4), 0.0, 0.0, 0)") {
+    val values: Seq[Double] = List(-1, 3, -2, 4)
+    val result = UpdateFunction.welfordVariance(values)
+    val expected: Double = ((-1.0* -1 + 3*3 + -2* -2 + 4*4) / 4) - 1*1   // = 6.5
+    assert(expected===result)
+  }
+
+  test("welfordVariance vs. sumSquaresVariance") {
+    val start = 1
+    val end = 2
+    for(i <- start to end) {
+      val values: Seq[Double] = (1 to i).toList.map(_.toDouble)
+      val result = UpdateFunction.welfordVariance(values)
+      val expected = UpdateFunction.sumSquaresVariance(0, 0, 0, values)
+      assert(expected===result)
+    }
+  }
+
 }

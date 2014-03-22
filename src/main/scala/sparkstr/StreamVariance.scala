@@ -1,5 +1,6 @@
 package sparkstr
 
+import scala.annotation.tailrec
 import scala.collection.mutable.SynchronizedQueue
 import scala.util.Random
 
@@ -79,17 +80,19 @@ object UpdateFunction {
     } else {
       val prevState = state.getOrElse(new StreamVarianceState())
       val newCount:Long = prevState.count + values.size
+
+      // Generate the new statistics.
+      val totalMean = (prevState.mean * prevState.count + values.sum)/newCount
       val newSumSquaresVariance =
         sumSquaresVariance(prevState.sumSquaresVar, prevState.mean, prevState.count, values)
-      val totalMean = (prevState.mean * prevState.count + values.sum)/newCount
       Some(new StreamVarianceState(prevState.count+values.size, 
                                    totalMean,
-                                   newSumSquaresVariance, 0))
+                                   newSumSquaresVariance, 0))  // TODO: Welford
     }
   }
 
   /**
-   * Use "sum of squares" to find the variance.
+   * Use "sum of squares minus mean squared" to find the variance.
    */
   def sumSquaresVariance(prevVar:Double = 0.0, prevMean:Double = 0.0, prevCount:Long = 0, 
                          values: Seq[Double]): Double = {
@@ -100,12 +103,31 @@ object UpdateFunction {
   }
 
   /**
-   * Use "Welford's Algorithm" to find the variance.
+   * Use "Welford's Algorithm" to find the variance.  The "Batch" in the name
+   * is there because we iterate through a batch of values per RDD, even though
+   * the algorithm could be done as a streaming algorithm if we did one
+   * Welford iteration step per each Spark Streaming iteration step; i.e., if 
+   * each RDD had only one x_i data value.
    */
-  def welfordVariance(values: Double): Double = { 
-    0.0 // TODO
+  def welfordVariance(values: Seq[Double]): Double = { 
+    @tailrec 
+    def welfordRec(values: Seq[Double], m2:Double, mean:Double, n:Int): Double = {
+      if(values.isEmpty) m2 / (n-1) // Note we need n-1 for pop. variance here.
+      else {
+        val x = values.head
+        val delta = x - mean
+        val newMean = mean + delta/n
+        val newM2 = m2 + delta*(x - newMean)
+        welfordRec(values.tail, newM2, newMean, n+1)
+      }
+    }
+    welfordRec(values, 0.0, 0.0, 1)
   }
 
+  /**
+   * Wikipedia "Algorithms for calculating variance", Chan.
+   * An equivalent implementation is in spark.util.StatCounter.
+   */
   def combinePrevCurrVars(prevVar:Double, prevMean:Double, prevCount:Long,
                           currVar:Double, currMean:Double, currCount:Long): Double = {
     // The proportion
@@ -122,7 +144,7 @@ object DataGenerator {
       val sineCount = 99
       val dataListSine:List[StreamVarianceData] = {
         for(j <- 0 to sineCount) 
-        yield {new StreamVarianceData("sine", Math.sin(2*Math.PI*Random.nextDouble))}
+        yield {new StreamVarianceData("sine", Math.sin(2*Math.PI * Random.nextDouble))}
       }.toList
 
       val dataListB:List[StreamVarianceData] = List(
