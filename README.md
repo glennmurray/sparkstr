@@ -63,6 +63,12 @@ Run this in sbt with
 
     > run-main sparkstr.StreamVariance local[2] 1
 
+I rolled my own implementations here , but note that the same implementations
+seem to be done well (i.e., with attention paid to floating-point issues) in
+Spark's built-in
+[StatCounter](https://github.com/apache/incubator-spark/blob/master/core/src/main/scala/org/apache/spark/util/StatCounter.scala).
+I recommend using that.
+
 
 HyperLogLog Implementation
 --------------------------
