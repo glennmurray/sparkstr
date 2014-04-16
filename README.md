@@ -4,7 +4,7 @@ Sparkstr
 This project is composed of examples of [Spark
 Streaming](http://spark.incubator.apache.org/docs/latest/index.html) jobs.
 These are proofs of concepts about Spark Streaming; none of the algorithms are
-new.
+new, nor is anything ready for production.
 
 A Spark Streaming job can be created in a [dozen
 lines](http://docs.sigmoidanalytics.com/index.php/Running_A_Simple_Streaming_Job_in_Local_Machine),
