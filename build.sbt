@@ -13,17 +13,18 @@ logLevel in Test := Level.Info
 resolvers ++= Seq(
   "Akka Repository" at "http://repo.akka.io/releases/",
   "Spray Repository" at "http://repo.spray.cc/",
-  "snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
-  "releases" at "http://oss.sonatype.org/content/repositories/releases"
+  "Sonatype snaps" at "http://oss.sonatype.org/content/repositories/snapshots",
+  "Sonatype releases" at "http://oss.sonatype.org/content/repositories/releases"
   )
 
+// For "%%" see
+// http://www.scala-sbt.org/release/docs/Getting-Started/Library-Dependencies
 libraryDependencies ++= {
   Seq(
-    //"org.scalatest" %% "scalatest" % "1.9.1" % "test",
-    "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
     "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided",
     "org.apache.spark" %% "spark-streaming" % "0.9.0-incubating" % "provided",
     "org.slf4j" % "slf4j-log4j12" % "1.7.2",
+    "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
     "junit" % "junit" % "4.8.1" % "test"
   )
 }

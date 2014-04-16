@@ -41,7 +41,7 @@ object StreamVariance {
     // Calculate and update the cumulative variances using updateStateByKey;
     // this will yield a state Dstream[(String, StreamVarianceState)].
     val stateDStream:DStream[(String, StreamVarianceState)]
-      = mappedStream.updateStateByKey[StreamVarianceState](UpdateFunction.updateFunc)
+      = mappedStream.updateStateByKey[StreamVarianceState](StreamVarianceUpdateFunction.updateFunc)
     //stateDStream.print()
     val stateDStreamValues = stateDStream.map(s => s.toString)
     stateDStreamValues.print()
@@ -49,7 +49,7 @@ object StreamVariance {
     ssc.start()
 
     // Create and stream some RDDs into the rddQueue.
-    DataGenerator.pushToRdd(ssc, rddQueue, 1000)
+    StreamVarianceDataGenerator.pushToRdd(ssc, rddQueue, 1000)
 
     ssc.stop()
   }
@@ -67,47 +67,69 @@ class StreamVarianceState(val count:Long = 0,
                           val sumSquaresVar:Double = 0.0,
                           val welfordVar:Double = 0.0)
     extends Serializable {
-  override def toString():String = f"count=$count, mean=${mean}%.4f, sumSquaresVar=$sumSquaresVar%.4f  "
+  override def toString():String = f"count=$count, mean=${mean}%.4f, "+
+    f"sumSquaresVar=$sumSquaresVar%.4f, welfordVar=$welfordVar%.4f"
 }
+
 
 /** 
  * A container for the DStream.updateStateByKey updateFunc.
  */
-object UpdateFunction {
-  val updateFunc = (values: Seq[Double], state: Option[StreamVarianceState]) => {
-    if(values.length==0) {
-       state
-    } else {
-      val prevState = state.getOrElse(new StreamVarianceState())
-      val newCount:Long = prevState.count + values.size
+object StreamVarianceUpdateFunction {
+  /**
+   * @param values The new data.
+   * @param state The previous state from the last RDD iteration.
+   * @return The new state: created from the previous state by updating it 
+   * with the new data.
+   */
+  val updateFunc:(Seq[Double], Option[StreamVarianceState]) => Option[StreamVarianceState] =
+    (values: Seq[Double], state: Option[StreamVarianceState]) => {
+      if(values.length==0) {
+        state
+      } else {
+        val prevState = state.getOrElse(new StreamVarianceState())
+        val prevCount = prevState.count
+        val prevMean = prevState.mean
+        val prevSumSquaresVar = prevState.sumSquaresVar
+        val prevWelfordVar = prevState.welfordVar
 
-      // Generate the new statistics.
-      val totalMean = (prevState.mean * prevState.count + values.sum)/newCount
-      val newSumSquaresVariance =
-        sumSquaresVariance(prevState.sumSquaresVar, prevState.mean, prevState.count, values)
-      Some(new StreamVarianceState(prevState.count+values.size, 
-                                   totalMean,
-                                   newSumSquaresVariance, 0))  // TODO: Welford
+        val valsCount = values.length
+        val valsMean = values.sum / valsCount
+
+        // Generate the new running statistics.
+        val count:Long = prevState.count + values.size
+        val mean = (prevState.mean * prevState.count + values.sum) / count
+
+        val valsSumSquaresVariance = sumSquaresVariance(values)
+        val sumSquaresVar = combinePrevCurrVars(prevSumSquaresVar, prevMean, prevCount,
+                                                valsSumSquaresVariance, valsMean, valsCount)
+
+        val valsWelfordVariance = welfordVariance(values)
+        val welfordVar = combinePrevCurrVars(prevWelfordVar, prevMean, prevCount,
+                                             valsWelfordVariance, valsMean, valsCount)
+
+        Some(new StreamVarianceState(count,
+                                     mean,
+                                     sumSquaresVar, 
+                                     welfordVar))
     }
   }
 
   /**
    * Use "sum of squares minus mean squared" to find the variance.
    */
-  def sumSquaresVariance(prevVar:Double = 0.0, prevMean:Double = 0.0, prevCount:Long = 0, 
-                         values: Seq[Double]): Double = {
+  def sumSquaresVariance(values: Seq[Double]): Double = {
     val k:Int = values.size
     val valuesMean:Double = values.sum/values.length
-    val valuesVar = (values.map(x => x*x).sum / k) - valuesMean * valuesMean
-    combinePrevCurrVars(prevVar, prevMean, prevCount, valuesVar, valuesMean, k)
+    (values.map(x => x*x).sum / k) - valuesMean * valuesMean
   }
 
   /**
-   * Use "Welford's Algorithm" to find the variance.  The "Batch" in the name
-   * is there because we iterate through a batch of values per RDD, even though
-   * the algorithm could be done as a streaming algorithm if we did one
-   * Welford iteration step per each Spark Streaming iteration step; i.e., if 
-   * each RDD had only one x_i data value.
+   * Use "Welford's Algorithm" to find the variance.  We iterate through a batch
+   * of values per RDD, even though the algorithm could be done as a streaming
+   * algorithm if we did one Welford iteration per each Spark Streaming
+   * iteration; i.e., if each RDD had only one x_i data value.
+   * @return The variance of the values.
    */
   def welfordVariance(values: Seq[Double]): Double = { 
     @tailrec 
@@ -125,8 +147,10 @@ object UpdateFunction {
   }
 
   /**
-   * Wikipedia "Algorithms for calculating variance", Chan.
-   * An equivalent implementation is in spark.util.StatCounter.
+   * Given the variances, means, and counts from two sets of data, find the
+   * variance of the combined set.  This algorithm is equivalent to the algorithm
+   * given in Wikipedia's "Algorithms for calculating variance", crediting Chan.
+   * Another equivalent implementation is in spark.util.StatCounter.
    */
   def combinePrevCurrVars(prevVar:Double, prevMean:Double, prevCount:Long,
                           currVar:Double, currMean:Double, currCount:Long): Double = {
@@ -137,24 +161,24 @@ object UpdateFunction {
 }
 
 
-object DataGenerator {
+object StreamVarianceDataGenerator {
   def pushToRdd(ssc: StreamingContext, 
-                rddQueue:SynchronizedQueue[RDD[StreamVarianceData]], pause:Int): Unit = {
-    for (i <- 0 to 99) {
+                rddQueue:SynchronizedQueue[RDD[StreamVarianceData]], 
+                pause:Int): Unit = {
+    for (i <- 0 to 9) {
       val sineCount = 99
       val dataListSine:List[StreamVarianceData] = {
         for(j <- 0 to sineCount) 
         yield {new StreamVarianceData("sine", Math.sin(2*Math.PI * Random.nextDouble))}
       }.toList
 
-      val dataListB:List[StreamVarianceData] = List(
-        new StreamVarianceData("LabelB", i),  // Label B should avg to zero and
-        new StreamVarianceData("LabelB", -i)  // have variance = sum(i^2)/(i+1).
+      val dataListA:List[StreamVarianceData] = List(
+        // LabelA should avg to zero and for i=k have variance = sum(i^2 + (-i)^2)/2k.
+        new StreamVarianceData("LabelA", i),  
+        new StreamVarianceData("LabelA", -i) 
       )
 
-      val dataList:List[StreamVarianceData] = dataListSine //::: dataListSine // :::
-      // makeRDD[T](seq: Seq[T], numSlices: Int): RDD[T]
-      // "Distribute a local Scala collection to form an RDD."
+      val dataList:List[StreamVarianceData] = dataListA ++ dataListSine // :::
       rddQueue += ssc.sparkContext.makeRDD(dataList)
       Thread.sleep(pause)
     }
