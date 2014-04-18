@@ -25,6 +25,7 @@ libraryDependencies ++= {
     "org.apache.spark" %% "spark-streaming" % "0.9.0-incubating" % "provided",
     "org.slf4j" % "slf4j-log4j12" % "1.7.2",
     "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
     "junit" % "junit" % "4.8.1" % "test"
   )
 }

@@ -4,7 +4,7 @@ Sparkstr
 This project is composed of examples of [Spark
 Streaming](http://spark.incubator.apache.org/docs/latest/index.html) jobs.
 These are proofs of concepts about Spark Streaming; none of the algorithms are
-new.
+new, nor is anything ready for production.
 
 A Spark Streaming job can be created in a [dozen
 lines](http://docs.sigmoidanalytics.com/index.php/Running_A_Simple_Streaming_Job_in_Local_Machine),
@@ -131,3 +131,25 @@ HyperLogLog is sometimes called a *cardinality estimator*.  Note that
 repeated (duplicate) values.  It could be called a *number of distinct values
 estimator*.  
 
+
+Stream Histogram and Estimated Median Implementation
+--------------------------
+
+This job maintains a histogram of incoming values and an estimate of their
+median.
+
+Run this in sbt with
+
+    > run-main sparkstr.StreamHistogramMedian local[2] 1
+
+The histogram is formed by dividing an interval into subintervals and keeping
+count of the number of incoming values within each subinterval.  For example,
+the interval [0, 100] can be divided into twenty subintervals with endpoints 0,
+5, 10, 15, etc.  If the values 6.5, 6.4, and 6.3 arrive, the count for the
+interval [5, 10) is incremented by three.  
+
+The median is determined to be in a certain subinterval of the histogram.  Since
+the original values that built the histogram are not retained, we estimate the
+value of the median to be the average of the endpoints of that subinterval.  In
+the example above, if the actual median is in [5, 10), then the estimated median
+is 7.5.
