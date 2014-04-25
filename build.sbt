@@ -24,6 +24,12 @@ libraryDependencies ++= {
     "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided",
     "org.apache.spark" %% "spark-streaming" % "0.9.0-incubating" % "provided",
     "org.slf4j" % "slf4j-log4j12" % "1.7.2",
+    // Linear algebra
+    "org.scalanlp" % "breeze_2.10" % "0.7",
+    // Native libraries are not included by default (as of 0.7)
+    // Native libraries greatly improve performance, but increase jar sizes.
+    //"org.scalanlp" % "breeze-natives_2.10" % "0.7",
+    // Testing
     "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
     "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
     "junit" % "junit" % "4.8.1" % "test"
