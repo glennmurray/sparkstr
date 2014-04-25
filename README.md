@@ -62,7 +62,7 @@ Stream Variance
 ---------------
 
 This job finds the variance (or, if desired, the standard deviation) over time
-for all the values for each key.  It calulates the running average (mean) along
+for all the values for each key.  It calculates the running average (mean) along
 the way in the same straight-forward way as the Stream Average job.  
 
 Run this in sbt with
@@ -132,8 +132,8 @@ repeated (duplicate) values.  It could be called a *number of distinct values
 estimator*.  
 
 
-Stream Histogram and Estimated Median Implementation
---------------------------
+Stream Histogram and Estimated Median
+-------------------------------------
 
 This job maintains a histogram of incoming values and an estimate of their
 median.
@@ -153,3 +153,48 @@ the original values that built the histogram are not retained, we estimate the
 value of the median to be the average of the endpoints of that subinterval.  In
 the example above, if the actual median is in [5, 10), then the estimated median
 is 7.5.
+
+
+Spark Streaming Kalman Filter
+-----------------------------
+
+This job implements a basic two-dimensional Kalman filter.  The example here is
+motivated by the example application in the [Wikipedia
+article](http://en.wikipedia.org/wiki/Kalman_filter).  In the example, position
+and velocity under a constant acceleration in one dimension are tracked.
+
+Run this in sbt with
+
+    > run-main sparkstr.StreamHistogramMedian local[2] 1
+
+Given a sequence over time of measurements of position and velocity, the Kalman
+filter will continuously predict the next position and velocity in the
+iteration.  In this job, the Kalman iteration prediction and update steps are
+one-to-one with the Spark Streaming iterations.  The noisy input position and
+velocity data (i.e., "observations" or "measurements") are generated from a
+known *transition model*.  In a sense, the transition model provides us with the
+Platonic truth about the system state; in this example, physics gives us the
+transition model.  In real-life applications, we don't have the actual true
+position and velocity and the Kalman filter compensates by acknowledging noise
+in the system.  Of course, in some applications (not this one), where no a
+priori physical model is available at all, the transition model is inferred from
+the data.  In this example we use the known transition model both for generating
+noisy measurement data and making successive estimates from the measurements.
+
+Kalman filters are extensively studied.  This example does not consider square
+root, ensemble, or unscented Kalman filters, all of which are important
+extensions.
+
+In the figure below we see the Kalman estimates converging to the actual values.
+
+![](images/KalmanFilter1.png)
+
+
+### About the Code
+
+Following the Wikipedia notation, the 2x1 matrix data are labeled 
+
+ * `x` The true "Platonic" position and velocity.
+ * `z` The observed position and velocity.
+ * `xe` The estimated or predicted position and velocity.
+
