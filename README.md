@@ -186,15 +186,20 @@ root, ensemble, or unscented Kalman filters, all of which are important
 extensions.
 
 In the figure below we see the Kalman estimates converging to the actual values.
+The plots were generated with [Octave](https://www.gnu.org/software/octave/).
 
 ![](images/KalmanFilter1.png)
 
 
 ### About the Code
 
-Following the Wikipedia notation, the 2x1 matrix data are labeled 
+Following the Wikipedia notation, the 2x1 matrix data are labeled as follows.
 
  * `x` The true "Platonic" position and velocity.
  * `z` The observed position and velocity.
  * `xe` The estimated or predicted position and velocity.
 
+The matrix computations are accomplished with [Breeze Linear
+Algebra](https://github.com/scalanlp/breeze/wiki/Breeze-Linear-Algebra).  I am
+grateful to a Kalman filter expert, [Steve
+Thomas](http://www.linkedin.com/pub/steve-thomas/5/317/b2), for his help.
