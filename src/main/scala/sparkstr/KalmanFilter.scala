@@ -12,7 +12,16 @@ import org.apache.spark.streaming.dstream.DStream
 import breeze.linalg._
 
 /**
- * Find variances for values in a stream. 
+ * Kalman Filters use linear algebra techniques to do iterative predictions.
+ * A classic example is tracking an object in space:  given a sequence of
+ * position measurements, the Kalman filter can predict the next position based
+ * upon the last measurement, while carrying along a constant-size "history" of
+ * the entire trajectory to aid in the next prediction.  Spark Streaming ingests
+ * and processes data in an iterative fashion, which makes it an interesting
+ * candidate for doing short-term predictions, particularly since its horizontal
+ * scalability may provide for predictions for many similar iterative sequences
+ * simultaneously, say many trajectories at once.  In particular, the
+ * constant-size memory requirements of Kalman filters are compelling.
  */
 object KalmanFilter {
   def main(args: Array[String]) {
