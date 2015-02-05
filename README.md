@@ -165,7 +165,7 @@ and velocity under a constant acceleration in one dimension are tracked.
 
 Run this in sbt with
 
-    > run-main sparkstr.StreamHistogramMedian local[2] 1
+    > run-main sparkstr.KalmanFilter local[2] 1
 
 Given a sequence over time of measurements of position and velocity, the Kalman
 filter will continuously predict the next position and velocity in the
