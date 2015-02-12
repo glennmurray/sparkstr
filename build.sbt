@@ -21,8 +21,8 @@ resolvers ++= Seq(
 // http://www.scala-sbt.org/release/docs/Getting-Started/Library-Dependencies
 libraryDependencies ++= {
   Seq(
-    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided",
-    "org.apache.spark" %% "spark-streaming" % "0.9.0-incubating" % "provided",
+    "org.apache.spark" %% "spark-core" % "0.9.0-incubating",
+    "org.apache.spark" %% "spark-streaming" % "0.9.0-incubating",
     "org.slf4j" % "slf4j-log4j12" % "1.7.2",
     // Linear algebra
     "org.scalanlp" % "breeze_2.10" % "0.7",
@@ -44,7 +44,31 @@ testOptions in Test += Tests.Argument("-oDS")
 
 assemblySettings
 
-//mergeStrategy at https://groups.google.com/forum/#!topic/spark-users/pHaF01sPwBo
+
+// https://github.com/sbt/sbt-assembly/tree/sbt0.13
+mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+  {
+    case PathList("about.html") => MergeStrategy.first
+    case PathList("log4j.properties") => MergeStrategy.first
+    case PathList("com", "esotericsoftware", xs @ _*) => MergeStrategy.first
+    case PathList("org", "apache", "commons", xs @ _*) => MergeStrategy.first
+    case PathList("javax", "servlet", xs @ _*) => MergeStrategy.first
+    case "application.conf" => MergeStrategy.concat
+    case "unwanted.txt"     => MergeStrategy.discard
+    case x => old(x)
+  }
+}
+
+// More recent
+// assemblyMergeStrategy in assembly := {
+//   case PathList("javax", "servlet", xs @ _*)         => MergeStrategy.first
+//   case PathList(ps @ _*) if ps.last endsWith ".html" => MergeStrategy.first
+//   case "application.conf"                            => MergeStrategy.concat
+//   case "unwanted.txt"                                => MergeStrategy.discard
+//   case x =>
+//     val oldStrategy = (assemblyMergeStrategy in assembly).value
+//     oldStrategy(x)
+// }
 
 assembleArtifact in packageScala := false
 
