@@ -1,11 +1,12 @@
 package sparkstr
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.streaming._
 import org.apache.spark.streaming.StreamingContext._
+import org.apache.spark.streaming._
 import org.apache.spark.streaming.dstream.DStream
 
-import scala.collection.mutable.{Buffer, SynchronizedQueue}
+import scala.collection.mutable
+import scala.collection.mutable.Buffer
 
 
 /**
@@ -21,12 +22,11 @@ object StreamLargest {
     val Array(master, batchDuration) = args
 
     // Create the context with the given batchDuration.
-    val ssc = new StreamingContext(master, "StreamLargest", Seconds(batchDuration.toInt), 
-      System.getenv("SPARK_HOME"), Seq(System.getenv("SPARK_EXAMPLES_JAR")))
+    val ssc = new StreamingContext(master, "StreamLargest", Seconds(batchDuration.toInt))
     ssc.checkpoint("./output")
 
     // Create the queue through which RDDs can be pushed to a QueueInputDStream.
-    val rddQueue = new SynchronizedQueue[RDD[StreamLargestData]]()
+    val rddQueue = new mutable.SynchronizedQueue[RDD[StreamLargestData]]()
     
     // "Create an input stream from a queue of RDDs."
     val inputStream:DStream[StreamLargestData] = ssc.queueStream(rddQueue) 
@@ -86,7 +86,9 @@ class StreamLargestState(val jSmallest:List[Double] = List.fill(3)(1),
 
   /**
    * Take the k largest from the concatenation of the two lists.
-   * The result is not sorted. 
+   * The result is not sorted.
+   *
+   * See http://stackoverflow.com/a/8275084/29771
    */
   def insertLarge(insertable: List[Double], l: List[Double]): List[Double] = {
     val b: Buffer[Double] = l.toBuffer
