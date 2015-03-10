@@ -1,11 +1,11 @@
 package sparkstr
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.streaming._
 import org.apache.spark.streaming.StreamingContext._
+import org.apache.spark.streaming._
 import org.apache.spark.streaming.dstream.DStream
 
-import scala.collection.mutable.SynchronizedQueue
+import scala.collection.mutable
 
 
 /**
@@ -15,18 +15,17 @@ object StreamSummer {
   def main(args: Array[String]) {
     if (args.length < 2) {
       System.err.println("\nUsage: StreamSummer <master> <batchDuration>\n" +
-        "In local mode, <master> should be 'local[n]' with n > 1.\n")
-      System.exit(1)
+        "For example: StreamSummer local[n] 1\n")
+      return
     }
     val Array(master, batchDuration) = args
 
     // Create the context with the given batchDuration.
-    val ssc = new StreamingContext(master, "StreamSummer", Seconds(batchDuration.toInt),
-      System.getenv("SPARK_HOME"), Seq(System.getenv("SPARK_EXAMPLES_JAR")))
+    val ssc = new StreamingContext(master, "StreamSummer", Seconds(batchDuration.toInt))//,
     ssc.checkpoint("./output")
 
     // Create the queue through which RDDs can be pushed to a QueueInputDStream.
-    val rddQueue = new SynchronizedQueue[RDD[StreamSummerData]]()
+    val rddQueue = new mutable.SynchronizedQueue[RDD[StreamSummerData]]()
     
     // "Create an input stream from a queue of RDDs."
     val inputStream:DStream[StreamSummerData] = ssc.queueStream(rddQueue) 
@@ -38,16 +37,15 @@ object StreamSummer {
     // Calculate and update the cumulative sums by key using 
     // PairDStreamFunctions.updateStateByKey[S](updateFunc: (Seq[V], Option[S]) ⇒ Option[S]),
     // which will work on the stream of k:v pairs in mappedStream.  This will yield
-    // a state Dstream[(String, Double)] which can be iteratively updated
-    // with updateFunc.  Note that our updateFunc does not reference the pairs's keys,
-    // but updateStateByKey keeps track of them and returns state by key.
+    // a state DStream[(String, Double)] which can be iteratively updated
+    // with updateFunc.  Note that our updateFunc does not reference the pairs'
+    // keys, but updateStateByKey keeps track of them and returns state by key.
     val updateFunc = (values: Seq[Double], state: Option[Double]) => {
       val currentSum:Double = values.sum // or foldLeft(0)(_ + _)
       val previousSum:Double = state.getOrElse(0)
       Some(previousSum + currentSum)
     }
-    val stateDStream:DStream[(String, Double)] 
-      = reducedStream.updateStateByKey[Double](updateFunc)
+    val stateDStream:DStream[(String, Double)] = reducedStream.updateStateByKey[Double](updateFunc)
     stateDStream.print()
 
     ssc.start()
@@ -65,7 +63,7 @@ object StreamSummer {
       // makeRDD[T](seq: Seq[T], numSlices: Int): RDD[T]
       // "Distribute a local Scala collection to form an RDD."
       rddQueue += ssc.sparkContext.makeRDD(dataList)
-      Thread.sleep(1000)
+      Thread.sleep(batchDuration.toInt * 999)
     }
 
     ssc.stop()
