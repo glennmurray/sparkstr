@@ -21,10 +21,12 @@ object StreamSummer {
     val Array(master, batchDuration) = args
 
     // Create the context with the given batchDuration.
-    val ssc = new StreamingContext(master, "StreamSummer", Seconds(batchDuration.toInt))//,
+    val ssc = new StreamingContext(master, "StreamSummer", Seconds(batchDuration.toInt))
     ssc.checkpoint("./output")
 
     // Create the queue through which RDDs can be pushed to a QueueInputDStream.
+    // We'll store our data in a case class.
+    case class StreamSummerData(label:String, value:Double) extends Serializable {}
     val rddQueue = new mutable.SynchronizedQueue[RDD[StreamSummerData]]()
     
     // "Create an input stream from a queue of RDDs."
@@ -63,12 +65,11 @@ object StreamSummer {
       // makeRDD[T](seq: Seq[T], numSlices: Int): RDD[T]
       // "Distribute a local Scala collection to form an RDD."
       rddQueue += ssc.sparkContext.makeRDD(dataList)
-      Thread.sleep(batchDuration.toInt * 999)
+      Thread.sleep(batchDuration.toInt * 1001)
     }
 
     ssc.stop()
   }
 }
 
-class StreamSummerData(val label:String = "label", val value:Double = 0.0) 
-  extends Serializable {}
+
