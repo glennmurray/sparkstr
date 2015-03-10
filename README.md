@@ -1,3 +1,5 @@
+Spark 1.2
+
 Sparkstr
 ========
 
